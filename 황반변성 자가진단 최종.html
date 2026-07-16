@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, user-scalable=no"
+  />
+
+  <title>어르신용 황반변성 간이 검사</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px 10px 50px;
+      background-color: #111;
+      color: #fff;
+      text-align: center;
+      font-family: "Malgun Gothic", sans-serif;
+    }
+
+    h1 {
+      margin: 5px 0 10px;
+      color: #ffeb3b;
+      font-size: 32px;
+    }
+
+    .instructions {
+      max-width: 650px;
+      margin: 0 auto 20px;
+      color: #e0e0e0;
+      font-size: 20px;
+      line-height: 1.7;
+    }
+
+    .instructions strong {
+      color: #fff;
+    }
+
+    .canvas-container {
+      position: relative;
+      width: min(94vw, 600px);
+      aspect-ratio: 1;
+      margin: 20px auto;
+      overflow: hidden;
+      border: 3px solid #fff;
+      background: #fff;
+      touch-action: none;
+    }
+
+    .canvas-container canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #markCanvas {
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    #status {
+      min-height: 28px;
+      color: #ddd;
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    .control-panel {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 22px;
+    }
+
+    button {
+      min-height: 55px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-undo {
+      background-color: #e65100;
+    }
+
+    .btn-diagnose {
+      padding-right: 35px;
+      padding-left: 35px;
+      background-color: #007bff;
+      font-size: 22px;
+    }
+
+    .btn-reset {
+      background-color: #c62828;
+    }
+
+    .result-container {
+      display: none;
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 20px;
+      border-radius: 15px;
+      background-color: #222;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .result-box {
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    .status-normal {
+      background-color: #2e7d32;
+      color: #fff;
+    }
+
+    .status-warning {
+      background-color: #f57c00;
+      color: #fff;
+    }
+
+    .status-danger {
+      background-color: #c62828;
+      color: #fff;
+    }
+
+    .mapping-title {
+      margin-bottom: 15px;
+      color: #ffeb3b;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .visual-flex {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .visual-explanation {
+      flex: 1;
+      min-width: 250px;
+      text-align: left;
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .retina-map {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      overflow: hidden;
+      border: 4px solid #fff;
+      border-radius: 50%;
+      background:
+        radial-gradient(
+          circle,
+          #ffcc80 20%,
+          #ff8a65 70%,
+          #d84315 100%
+        );
+      box-shadow: 0 0 15px rgba(255, 87, 34, 0.6);
+    }
+
+    .retina-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 3;
+      width: 30px;
+      height: 30px;
+      border: 2px dashed rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .retina-spot {
+      position: absolute;
+      z-index: 5;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: rgba(255, 23, 68, 0.85);
+      box-shadow:
+        0 0 10px #ff1744,
+        0 0 20px #ff1744;
+      transform: translate(-50%, -50%);
+      animation: blink 1.5s infinite alternate;
+    }
+
+    @keyframes blink {
+      from {
+        opacity: 0.5;
+        transform: translate(-50%, -50%) scale(0.9);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+      }
+    }
+
+    .disclaimer {
+      max-width: 650px;
+      margin: 40px auto 0;
+      color: #888;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 560px) {
+      .control-panel {
+        display: grid;
+        grid-template-columns: 1fr;
+        max-width: 390px;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>눈 건강 자가 진단</h1>
+
+  <div class="instructions">
+    검사하지 않는 눈을 가리고
+    <strong>가운데 검은 점</strong>을 계속 바라보세요.<br />
+
+    독서용 안경이 있으면 착용해 주세요.<br />
+
+    선이 휘거나 흐리거나 비어 보이는 부분을
+    손가락으로 색칠해 주세요.
+  </div>
+
+  <div class="canvas-container" id="canvasContainer">
+    <canvas id="gridCanvas"></canvas>
+    <canvas id="markCanvas"></canvas>
+  </div>
+
+  <div id="status">
+    아직 표시한 부분이 없습니다.
+  </div>
+
+  <div class="control-panel">
+    <button
+      type="button"
+      class="btn-undo"
+      id="undoButton"
+      disabled
+    >
+      ↩ 방금 색칠 취소
+    </button>
+
+    <button
+      type="button"
+      class="btn-diagnose"
+      id="analyzeButton"
+    >
+      진단 결과 보기
+    </button>
+
+    <button
+      type="button"
+      class="btn-reset"
+      id="resetButton"
+    >
+      🔄 처음부터 다시 하기
+    </button>
+  </div>
+
+  <div class="result-container" id="resultContainer">
+    <div class="result-box" id="resultBox"></div>
+
+    <hr
+      style="
+        border: 0;
+        height: 1px;
+        margin: 20px 0;
+        background: #444;
+      "
+    />
+
+    <div class="mapping-title">
+      👁️ 어르신의 망막(황반) 예상 의심 부위
+    </div>
+
+    <div class="visual-flex">
+      <div class="retina-map" id="retinaMap">
+        <div class="retina-center"></div>
+      </div>
+
+      <div
+        class="visual-explanation"
+        id="visualExplanation"
+      ></div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    ※ 본 검사는 간이 테스트입니다. 정확한 진단은 반드시
+    안과 병원에서 정밀 검사를 받으셔야 합니다.
+  </div>
+
+  <script>
+    const gridCanvas =
+      document.getElementById("gridCanvas");
+
+    const markCanvas =
+      document.getElementById("markCanvas");
+
+    const canvasContainer =
+      document.getElementById("canvasContainer");
+
+    const gridContext =
+      gridCanvas.getContext("2d");
+
+    const markContext =
+      markCanvas.getContext("2d");
+
+    const statusText =
+      document.getElementById("status");
+
+    const undoButton =
+      document.getElementById("undoButton");
+
+    const analyzeButton =
+      document.getElementById("analyzeButton");
+
+    const resetButton =
+      document.getElementById("resetButton");
+
+    const resultContainer =
+      document.getElementById("resultContainer");
+
+    const resultBox =
+      document.getElementById("resultBox");
+
+    const retinaMap =
+      document.getElementById("retinaMap");
+
+    const visualExplanation =
+      document.getElementById("visualExplanation");
+
+    let strokes = [];
+    let currentStroke = [];
+    let isDrawing = false;
+
+    let canvasSize = 0;
+    let deviceRatio = 1;
+
+    function resizeCanvas() {
+      const rect =
+        canvasContainer.getBoundingClientRect();
+
+      canvasSize = rect.width;
+
+      deviceRatio = Math.min(
+        Math.max(window.devicePixelRatio || 1, 1),
+        3
+      );
+
+      [gridCanvas, markCanvas].forEach((canvas) => {
+        canvas.width =
+          Math.round(canvasSize * deviceRatio);
+
+        canvas.height =
+          Math.round(canvasSize * deviceRatio);
+
+        canvas.style.width =
+          canvasSize + "px";
+
+        canvas.style.height =
+          canvasSize + "px";
+      });
+
+      gridContext.setTransform(
+        deviceRatio,
+        0,
+        0,
+        deviceRatio,
+        0,
+        0
+      );
+
+      markContext.setTransform(
+        deviceRatio,
+        0,
+        0,
+        deviceRatio,
+        0,
+        0
+      );
+
+      drawGrid();
+      redrawMarks();
+    }
+
+    function drawGrid() {
+      gridContext.clearRect(
+        0,
+        0,
+        canvasSize,
+        canvasSize
+      );
+
+      gridContext.fillStyle = "#fff";
+
+      gridContext.fillRect(
+        0,
+        0,
+        canvasSize,
+        canvasSize
+      );
+
+      const gridCount = 20;
+      const gridStep = canvasSize / gridCount;
+
+      gridContext.strokeStyle = "#111";
+      gridContext.lineWidth = 1;
+
+      gridContext.beginPath();
+
+      for (let i = 0; i <= gridCount; i++) {
+        const position = i * gridStep;
+
+        gridContext.moveTo(position, 0);
+        gridContext.lineTo(position, canvasSize);
+
+        gridContext.moveTo(0, position);
+        gridContext.lineTo(canvasSize, position);
+      }
+
+      gridContext.stroke();
+
+      gridContext.beginPath();
+
+      gridContext.arc(
+        canvasSize / 2,
+        canvasSize / 2,
+        Math.max(6, canvasSize * 0.012),
+        0,
+        Math.PI * 2
+      );
+
+      gridContext.fillStyle = "#000";
+      gridContext.fill();
+    }
+
+    function drawStroke(
+      context,
+      stroke,
+      size,
+      color = "rgba(220, 30, 30, 0.72)"
+    ) {
+      if (!stroke || stroke.length === 0) {
+        return;
+      }
+
+      context.save();
+
+      context.strokeStyle = color;
+      context.fillStyle = color;
+
+      context.lineWidth =
+        Math.max(19, size * 0.052);
+
+      context.lineCap = "round";
+      context.lineJoin = "round";
+
+      if (stroke.length === 1) {
+        context.beginPath();
+
+        context.arc(
+          stroke[0].x * size,
+          stroke[0].y * size,
+          context.lineWidth / 2,
+          0,
+          Math.PI * 2
+        );
+
+        context.fill();
+      } else {
+        context.beginPath();
+
+        context.moveTo(
+          stroke[0].x * size,
+          stroke[0].y * size
+        );
+
+        for (let i = 1; i < stroke.length; i++) {
+          context.lineTo(
+            stroke[i].x * size,
+            stroke[i].y * size
+          );
+        }
+
+        context.stroke();
+      }
+
+      context.restore();
+    }
+
+    function redrawMarks() {
+      markContext.clearRect(
+        0,
+        0,
+        canvasSize,
+        canvasSize
+      );
+
+      strokes.forEach((stroke) => {
+        drawStroke(
+          markContext,
+          stroke,
+          canvasSize
+        );
+      });
+
+      if (currentStroke.length > 0) {
+        drawStroke(
+          markContext,
+          currentStroke,
+          canvasSize
+        );
+      }
+
+      undoButton.disabled =
+        strokes.length === 0;
+    }
+
+    function getPointerPosition(event) {
+      const rect =
+        markCanvas.getBoundingClientRect();
+
+      return {
+        x: Math.min(
+          1,
+          Math.max(
+            0,
+            (event.clientX - rect.left) /
+              rect.width
+          )
+        ),
+
+        y: Math.min(
+          1,
+          Math.max(
+            0,
+            (event.clientY - rect.top) /
+              rect.height
+          )
+        )
+      };
+    }
+
+    function addPoint(event) {
+      const point =
+        getPointerPosition(event);
+
+      const previous =
+        currentStroke[
+          currentStroke.length - 1
+        ];
+
+      if (
+        !previous ||
+        Math.hypot(
+          point.x - previous.x,
+          point.y - previous.y
+        ) > 0.006
+      ) {
+        currentStroke.push(point);
+        redrawMarks();
+      }
+    }
+
+    markCanvas.addEventListener(
+      "pointerdown",
+      (event) => {
+        event.preventDefault();
+
+        isDrawing = true;
+        currentStroke = [];
+
+        markCanvas.setPointerCapture(
+          event.pointerId
+        );
+
+        addPoint(event);
+      }
+    );
+
+    markCanvas.addEventListener(
+      "pointermove",
+      (event) => {
+        if (!isDrawing) {
+          return;
+        }
+
+        event.preventDefault();
+        addPoint(event);
+      }
+    );
+
+    function finishDrawing(event) {
+      if (!isDrawing) {
+        return;
+      }
+
+      isDrawing = false;
+
+      if (currentStroke.length > 0) {
+        strokes.push(currentStroke);
+      }
+
+      currentStroke = [];
+
+      try {
+        markCanvas.releasePointerCapture(
+          event.pointerId
+        );
+      } catch (error) {}
+
+      redrawMarks();
+
+      statusText.textContent =
+        `${strokes.length}개의 영역을 표시했습니다.`;
+    }
+
+    markCanvas.addEventListener(
+      "pointerup",
+      finishDrawing
+    );
+
+    markCanvas.addEventListener(
+      "pointercancel",
+      finishDrawing
+    );
+
+    undoButton.addEventListener(
+      "click",
+      () => {
+        strokes.pop();
+        redrawMarks();
+
+        statusText.textContent =
+          strokes.length === 0
+            ? "아직 표시한 부분이 없습니다."
+            : `${strokes.length}개의 영역이 남았습니다.`;
+
+        resultContainer.style.display =
+          "none";
+      }
+    );
+
+    resetButton.addEventListener(
+      "click",
+      () => {
+        strokes = [];
+        currentStroke = [];
+
+        redrawMarks();
+        removeRetinaSpots();
+
+        statusText.textContent =
+          "아직 표시한 부분이 없습니다.";
+
+        resultContainer.style.display =
+          "none";
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+      }
+    );
+
+    function createAnalysisCanvas() {
+      const size = 240;
+
+      const canvas =
+        document.createElement("canvas");
+
+      canvas.width = size;
+      canvas.height = size;
+
+      const context =
+        canvas.getContext(
+          "2d",
+          { willReadFrequently: true }
+        );
+
+      strokes.forEach((stroke) => {
+        drawStroke(
+          context,
+          stroke,
+          size,
+          "#000"
+        );
+      });
+
+      return {
+        context,
+        size
+      };
+    }
+
+    function analyzeMarks() {
+      if (strokes.length === 0) {
+        return {
+          hasMarks: false,
+          markedPercent: 0,
+          centerIncluded: false,
+          averageX: 0.5,
+          averageY: 0.5
+        };
+      }
+
+      const {
+        context,
+        size
+      } = createAnalysisCanvas();
+
+      const imageData =
+        context.getImageData(
+          0,
+          0,
+          size,
+          size
+        ).data;
+
+      let markedPixels = 0;
+      let centerPixels = 0;
+
+      let sumX = 0;
+      let sumY = 0;
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const alpha =
+            imageData[
+              (y * size + x) * 4 + 3
+            ];
+
+          if (alpha < 20) {
+            continue;
+          }
+
+          markedPixels++;
+
+          const normalizedX =
+            (x + 0.5) / size;
+
+          const normalizedY =
+            (y + 0.5) / size;
+
+          sumX += normalizedX;
+          sumY += normalizedY;
+
+          if (
+            Math.hypot(
+              normalizedX - 0.5,
+              normalizedY - 0.5
+            ) <= 0.18
+          ) {
+            centerPixels++;
+          }
+        }
+      }
+
+      return {
+        hasMarks: true,
+
+        markedPercent:
+          markedPixels /
+          (size * size) *
+          100,
+
+        centerIncluded:
+          centerPixels >
+          Math.max(
+            12,
+            markedPixels * 0.03
+          ),
+
+        averageX:
+          sumX / markedPixels,
+
+        averageY:
+          sumY / markedPixels
+      };
+    }
+
+    function removeRetinaSpots() {
+      retinaMap
+        .querySelectorAll(".retina-spot")
+        .forEach((spot) => {
+          spot.remove();
+        });
+    }
+
+    function drawRetinaSpots() {
+      removeRetinaSpots();
+
+      strokes.forEach((stroke) => {
+        const interval =
+          Math.max(
+            1,
+            Math.floor(stroke.length / 7)
+          );
+
+        for (
+          let i = 0;
+          i < stroke.length;
+          i += interval
+        ) {
+          const point = stroke[i];
+
+          const retinaX =
+            1 - point.x;
+
+          const retinaY =
+            1 - point.y;
+
+          const spot =
+            document.createElement("div");
+
+          spot.className =
+            "retina-spot";
+
+          spot.style.left =
+            `${8 + retinaX * 84}%`;
+
+          spot.style.top =
+            `${8 + retinaY * 84}%`;
+
+          retinaMap.appendChild(spot);
+        }
+      });
+    }
+
+    function getLocationDescription(
+      analysis
+    ) {
+      if (analysis.centerIncluded) {
+        return "황반의 <strong>정중앙(시력 중심부)</strong>";
+      }
+
+      let verticalText = "";
+      let horizontalText = "";
+
+      if (analysis.averageY < 0.45) {
+        verticalText =
+          "하단(아래쪽)";
+      } else if (
+        analysis.averageY > 0.55
+      ) {
+        verticalText =
+          "상단(위쪽)";
+      }
+
+      if (analysis.averageX < 0.45) {
+        horizontalText =
+          "우측(오른쪽)";
+      } else if (
+        analysis.averageX > 0.55
+      ) {
+        horizontalText =
+          "좌측(왼쪽)";
+      }
+
+      const positionText =
+        `${verticalText} ${horizontalText}`
+          .trim();
+
+      if (!positionText) {
+        return "황반의 <strong>중심 주변부</strong>";
+      }
+
+      return (
+        "황반 중심 기준 " +
+        `<strong>${positionText} 주변부</strong>`
+      );
+    }
+
+    analyzeButton.addEventListener(
+      "click",
+      () => {
+        const analysis =
+          analyzeMarks();
+
+        resultContainer.style.display =
+          "block";
+
+        resultBox.className =
+          "result-box";
+
+        removeRetinaSpots();
+
+        if (!analysis.hasMarks) {
+          resultBox.classList.add(
+            "status-normal"
+          );
+
+          resultBox.innerHTML =
+            "😊 정상 (안심)<br>" +
+            "<span style='font-size:18px; font-weight:normal;'>" +
+            "선들이 곧게 잘 보이시는군요! 정기적으로 검사해 주세요." +
+            "</span>";
+
+          visualExplanation.innerHTML =
+            "• 발견된 이상 부위가 없습니다.<br>" +
+            "• 황반 중심부와 주변부 모두 깨끗하게 인지되고 있습니다.";
+
+          resultContainer.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+
+          return;
+        }
+
+        const locationDescription =
+          getLocationDescription(
+            analysis
+          );
+
+        drawRetinaSpots();
+
+        visualExplanation.innerHTML =
+          "• 현재 어르신의 눈 안쪽 망막에서 " +
+          `<strong>${locationDescription}</strong>` +
+          "에 이상이 있을 것으로 추정됩니다.<br>" +
+          "• 주황색 원 안의 🔴 빨간 점 위치가 정밀 검사가 필요한 부위입니다.";
+
+        if (
+          analysis.centerIncluded ||
+          analysis.markedPercent >= 4
+        ) {
+          resultBox.classList.add(
+            "status-danger"
+          );
+
+          resultBox.innerHTML =
+            "⚠️ 위험 (정밀 검사 필요)<br>" +
+            "<span style='font-size:18px; font-weight:normal;'>" +
+            "황반 중심부 질환이 의심됩니다. 지체하지 마시고 안과 전문의의 진단을 받으세요." +
+            "</span>";
+        } else {
+          resultBox.classList.add(
+            "status-warning"
+          );
+
+          resultBox.innerHTML =
+            "🧐 주의 (안과 진료 권장)<br>" +
+            "<span style='font-size:18px; font-weight:normal;'>" +
+            "황반 주변부에 왜곡이 의심됩니다. 가까운 시일 안에 안과에서 확인해 주세요." +
+            "</span>";
+        }
+
+        resultContainer.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+    );
+
+    window.addEventListener(
+      "resize",
+      () => {
+        clearTimeout(
+          window.resizeTimer
+        );
+
+        window.resizeTimer =
+          setTimeout(
+            resizeCanvas,
+            100
+          );
+      }
+    );
+
+    resizeCanvas();
+  </script>
+</body>
+</html>
