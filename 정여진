@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 절체절명: 담배 연기 속 탈출구 (Deluxe Horror Edition)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+KR:wght@300;500;800&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #030202;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+       
+        /* 메인 게임 컨테이너 */
+        #game-container {
+            width: 950px;
+            height: 620px;
+            /* 백룸/폐허 느낌의 배경 이미지와 붉은 조명 그라데이션 조합 */
+            background: radial-gradient(circle, rgba(120, 10, 10, 0.25) 0%, rgba(5, 0, 0, 0.98) 90%),
+                        url('https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=1000&q=80');
+            background-size: cover;
+            background-position: center;
+            border: 4px solid #3a0000;
+            border-radius: 16px;
+            position: relative;
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.35);
+            overflow: hidden;
+            transition: filter 0.3s ease;
+        }
+
+        /* 붉게 깜빡이는 비상 경보 애니메이션 */
+        @keyframes emergency-pulse {
+            0% { box-shadow: 0 0 20px rgba(180, 0, 0, 0.3); border-color: #3a0000; }
+            50% { box-shadow: 0 0 45px rgba(255, 0, 0, 0.7); border-color: #aa0000; }
+            100% { box-shadow: 0 0 20px rgba(180, 0, 0, 0.3); border-color: #3a0000; }
+        }
+        .emergency-active {
+            animation: emergency-pulse 2s infinite;
+        }
+
+        /* 스모그 가득 찬 연기 연출 효과 */
+        .smoke-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 30%, rgba(20, 20, 20, 0.8) 100%);
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .header {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            right: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5;
+        }
+        .game-title {
+            margin: 0;
+            color: #ff3333;
+            font-size: 24px;
+            font-weight: 800;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+            letter-spacing: -0.5px;
+        }
+        .timer {
+            font-size: 24px;
+            font-family: 'Courier New', monospace;
+            color: #ff3333;
+            font-weight: bold;
+            background: rgba(10, 0, 0, 0.9);
+            padding: 8px 22px;
+            border-radius: 6px;
+            border: 2px solid #8b0000;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+            text-shadow: 0 0 5px #ff0000;
+        }
+       
+        /* 대화형 오브젝트 공통 스타일 */
+        .interactive-obj {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 4;
+        }
+        .interactive-obj:hover {
+            transform: scale(1.18);
+            filter: drop-shadow(0 0 12px rgba(255, 0, 0, 0.6));
+        }
+        .obj-icon {
+            font-size: 48px;
+            user-select: none;
+            filter: drop-shadow(0 0 8px rgba(0,0,0,0.9));
+        }
+        .obj-label {
+            font-size: 11px;
+            color: #eee;
+            font-weight: 500;
+            background: rgba(15, 0, 0, 0.85);
+            padding: 3px 8px;
+            margin-top: 6px;
+            border-radius: 4px;
+            border: 1px solid #5a0000;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* 아이템 좌표 배치 */
+        #door { top: 210px; left: 55px; }
+        #clue-1 { top: 110px; left: 340px; }
+        #clue-2 { top: 170px; left: 700px; }
+        #clue-3 { top: 380px; left: 240px; }
+        #clue-4 { top: 120px; left: 530px; }
+        #clue-5 { top: 330px; left: 760px; }
+
+        #decoy-1 { top: 280px; left: 220px; }
+        #decoy-2 { top: 330px; left: 490px; }
+        #decoy-3 { top: 230px; left: 520px; }
+        #decoy-4 { top: 430px; left: 370px; }
+        #decoy-5 { top: 390px; left: 610px; }
+
+        /* 점프스케어 갑툭튀 오버레이 */
+        #jumpscare-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #200000 0%, #000 100%);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #jumpscare-image {
+            font-size: 220px;
+            animation: ultra-shake 0.05s infinite;
+            filter: drop-shadow(0 0 40px #ff0000);
+        }
+        #jumpscare-text {
+            color: #ff1111;
+            font-size: 34px;
+            font-weight: bold;
+            margin-top: 30px;
+            text-shadow: 0 0 15px #ff0000;
+            animation: pulse-text 0.4s infinite alternate;
+            letter-spacing: 2px;
+        }
+
+        @keyframes ultra-shake {
+            0% { transform: translate(4px, -4px) scale(1.05) rotate(1deg); }
+            50% { transform: translate(-5px, 5px) scale(0.95) rotate(-1deg); }
+            100% { transform: translate(4px, -4px) scale(1.05) rotate(1deg); }
+        }
+        @keyframes pulse-text {
+            from { transform: scale(0.95); opacity: 0.7; }
+            to { transform: scale(1.15); opacity: 1; }
+        }
+
+        /* 공통 커스텀 모달 */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 460px;
+            background: linear-gradient(135deg, #120202 0%, #080000 100%);
+            border: 3px solid #8b0000;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.95);
+            z-index: 50;
+            text-align: center;
+            box-sizing: border-box;
+            animation: pop-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop-up {
+            from { transform: translate(-50%, -40%) scale(0.8); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        .modal h3 {
+            margin-top: 0;
+            color: #ff3333;
+            font-size: 22px;
+            text-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
+        }
+        .modal p {
+            font-size: 14.5px;
+            line-height: 1.7;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+        .modal input {
+            width: 90%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #5a0000;
+            border-radius: 6px;
+            background: #050000;
+            color: #ff3333;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .modal input:focus {
+            border-color: #ff3333;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+        .modal .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        .modal button {
+            background: #8b0000;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 6px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .modal button:hover {
+            background: #ff0000;
+            transform: translateY(-2px);
+        }
+        .modal button:active {
+            transform: translateY(0);
+        }
+
+        /* 하단 고정 스튜디오 연출용 대화 로그 창 */
+        #narration {
+            position: absolute;
+            bottom: 25px;
+            left: 5%;
+            width: 90%;
+            background: rgba(8, 0, 0, 0.95);
+            border-left: 5px solid #ff3333;
+            padding: 18px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            min-height: 75px;
+            z-index: 5;
+            line-height: 1.6;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+            border-top: 1px solid rgba(255, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container" class="emergency-active">
+    <!-- 가스 연기 효과 레이어 -->
+    <div class="smoke-overlay"></div>
+
+    <div class="header">
+        <h2 class="game-title">⚠️ 금연 사투: 연기 속 숨겨진 암호</h2>
+        <div class="timer" id="timer-display">남은 시간: 02:00</div>
+    </div>
+
+    <!-- 탈출구 -->
+    <div class="interactive-obj" id="door" onclick="openDoorModal()">
+        <span class="obj-icon">🚪</span>
+        <span class="obj-label">철갑문</span>
+    </div>
+
+    <!-- 5개의 고유 퀴즈 오브젝트 -->
+    <div class="interactive-obj" id="clue-1" onclick="openQuiz(1)">
+        <span class="obj-icon">🚬</span>
+        <span class="obj-label">식어버린 담배갑</span>
+    </div>
+    <div class="interactive-obj" id="clue-2" onclick="openQuiz(2)">
+        <span class="obj-icon">💀</span>
+        <span class="obj-label">어둠 속 유골</span>
+    </div>
+    <div class="interactive-obj" id="clue-3" onclick="openQuiz(3)">
+        <span class="obj-icon">🫁</span>
+        <span class="obj-label">검게 변한 폐 모형</span>
+    </div>
+    <div class="interactive-obj" id="clue-4" onclick="openQuiz(4)">
+        <span class="obj-icon">🧪</span>
+        <span class="obj-label">의문의 화학 시약병</span>
+    </div>
+    <div class="interactive-obj" id="clue-5" onclick="openQuiz(5)">
+        <span class="obj-icon">📜</span>
+        <span class="obj-label">찢어진 신문조각</span>
+    </div>
+
+    <!-- 5개의 함정/데코이 오브젝트 -->
+    <div class="interactive-obj" id="decoy-1" onclick="interactDecoy('쓰레기통', '찌그러진 캔과 기분 나쁜 타르 찌꺼기가 고여 있을 뿐입니다. 헛물만 켰습니다.')">
+        <span class="obj-icon">🗑️</span>
+        <span class="obj-label">쓰레기통</span>
+    </div>
+    <div class="interactive-obj" id="decoy-2" onclick="interactDecoy('깨진 거울', '산소 결핍으로 인해 푸르게 변해가는 당신의 입술이 비칩니다... 공포심이 가중됩니다.')">
+        <span class="obj-icon">🪞</span>
+        <span class="obj-label">깨진 거울</span>
+    </div>
+    <div class="interactive-obj" id="decoy-3" onclick="interactDecoy('엎질러진 비커', '독한 화학 물질이 흘러나와 매캐한 냄새를 풍깁니다. 기침이 멈추지 않습니다.')">
+        <span class="obj-icon">🧪</span>
+        <span class="obj-label">엎질러진 비커</span>
+    </div>
+    <div class="interactive-obj" id="decoy-4" onclick="interactDecoy('거미줄', '진득거리는 거미줄이 얼굴에 들러붙습니다. 어딘가에서 슥슥 기어 다니는 소리가 들립니다.')">
+        <span class="obj-icon">🕸️</span>
+        <span class="obj-label">거미줄</span>
+    </div>
+    <div class="interactive-obj" id="decoy-5" onclick="interactDecoy('철제 캐비닛', '녹슨 문고리가 단단히 끼어 움직이지 않습니다. 안에서 아주 약한 신음이 들린 것 같습니다.')">
+        <span class="obj-icon">🗄️</span>
+        <span class="obj-label">철제 캐비닛</span>
+    </div>
+
+    <!-- 실시간 나레이션 안내 영역 -->
+    <div id="narration">
+        <span style="color:#ff5555; font-weight:800;">[STATUS]</span> 사방에 담배 연기가 스며들어 목을 조여옵니다. 5가지의 실마리(🚬, 💀, 🫁, 🧪, 📜)를 터치해 핵심 퀴즈를 풀고 비밀번호를 조합해 철갑문을 열어내십시오. 쓸데없는 함정을 뒤지다간... 이 방의 진정한 집주인과 눈이 마주치게 됩니다.
+    </div>
+</div>
+
+<!-- 퀴즈 팝업창 -->
+<div id="quiz-modal" class="modal">
+    <h3 id="quiz-title">단서 해독</h3>
+    <p id="quiz-question">질문 내용</p>
+    <input type="text" id="quiz-input" placeholder="이곳에 정답 입력">
+    <div class="btn-group">
+        <button onclick="checkAnswer()">정답 제출</button>
+        <button onclick="closeModal()" style="background:#333;">창 닫기</button>
+    </div>
+</div>
+
+<!-- 도어락 비밀번호 입력창 -->
+<div id="door-modal" class="modal">
+    <h3>🔑 디지털 도어락 시스템</h3>
+    <p>5개의 단서가 결합된 순서대로 5자리 고유 비밀번호를 가공 없이 정렬하여 입력하십시오.</p>
+    <input type="text" id="door-input" placeholder="숫자 5자리" maxlength="5">
+    <div class="btn-group">
+        <button onclick="tryEscape()" style="background:#a30000;">잠금 해제</button>
+        <button onclick="closeModal()" style="background:#333;">취소</button>
+    </div>
+</div>
+
+<!-- 점프스케어 레이어 -->
+<div id="jumpscare-overlay">
+    <div id="jumpscare-image">👹</div>
+    <div id="jumpscare-text">"폐포 깊숙한 곳까지 어둠으로 가득 차라...!"</div>
+</div>
+
+<script>
+    let timeLeft = 120; // 2분 제한시간 (120초)
+    let passwords = { 1: null, 2: null, 3: null, 4: null, 5: null };
+    let currentQuizNum = 0;
+    let timerInterval;
+
+    const quizzes = {
+        1: {
+            question: "[Q1] 담배 타르의 주성분이자 도로 포장이나 방수막에 쓰이는 유독성 점성 물질은? (초성: ㅌㄹ)",
+            answer: "타르",
+            code: 4
+        },
+        2: {
+            question: "[Q2] 일시적인 쾌감을 유발해 중독을 만들고 뇌 혈관의 흐름을 방해하는 핵심 알칼로이드 성분은? (초성: ㄴㅋㅌ)",
+            answer: "니코틴",
+            code: 1
+        },
+        3: {
+            question: "[Q3] 혈액의 헤모글로빈과 강하게 결합하여 산소 결핍과 조직 괴사를 일으키는 연소 가스는? (초성: ㅇㅅㅎㅌㅅ)",
+            answer: "일산화탄소",
+            code: 9
+        },
+        4: {
+            question: "[Q4] 직접 담배를 태우지 않는 주변인들에게 간접 노출되어 동일한 치명상을 입히는 행위는? (초성: ㄱㅈㅎㅇ)",
+            answer: "간접흡연",
+            code: 2
+        },
+        5: {
+            question: "[Q5] 세계보건기구(WHO) 국제암연구소(IARC)에서 공인한 담배의 인체 유해 물질 등급은? (초성: 1ㄱㅂㅇㅁㅈ)",
+            answer: "1급 발암물질",
+            code: 6
+        }
+    };
+
+    // 브라우저 키보드 엔터 키 제출 대응 추가
+    document.getElementById('quiz-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') checkAnswer();
+    });
+    document.getElementById('door-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') tryEscape();
+    });
+
+    // 실시간 타이머
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                gameOver(false);
+                return;
+            }
+            timeLeft--;
+            const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+            const seconds = String(timeLeft % 60).padStart(2, '0');
+            document.getElementById('timer-display').innerText = `남은 시간: ${minutes}:${seconds}`;
+
+            // 시간 촉박 연출 (30초 이하일 때 빠른 적색 플리커링)
+            if (timeLeft <= 30) {
+                document.getElementById('game-container').style.animationDuration = '0.6s';
+                document.getElementById('timer-display').style.color = '#ff0000';
+            }
+        }, 1000);
+    }
+
+    // 내레이션 변경 함수
+    function log(message) {
+        document.getElementById('narration').innerHTML = message;
+    }
+
+    // 퀴즈 팝업
+    function openQuiz(num) {
+        currentQuizNum = num;
+        document.getElementById('quiz-title').innerText = `🧩 [단서 #${num}] 정밀 분석`;
+        document.getElementById('quiz-question').innerText = quizzes[num].question;
+        document.getElementById('quiz-input').value = "";
+        document.getElementById('quiz-modal').style.display = 'block';
+        document.getElementById('quiz-input').focus();
+    }
+
+    // 퀴즈 검증
+    function checkAnswer() {
+        const input = document.getElementById('quiz-input').value.trim();
+        const activeQuiz = quizzes[currentQuizNum];
+
+        if (input === activeQuiz.answer) {
+            passwords[currentQuizNum] = activeQuiz.code;
+            log(`🟩 <span style="color:#00ff88; font-weight:800;">[해독 완료]</span> 단서 분석에 성공하였습니다. 복원된 파편 코드: [ <b style="color:#ffcc00; font-size:16px;">${activeQuiz.code}</b> ]`);
+            closeModal();
+           
+            // 해독된 오브젝트 비활성화 시각 연출
+            const target = document.getElementById(`clue-${currentQuizNum}`);
+            target.style.opacity = '0.25';
+            target.style.filter = 'grayscale(100%)';
+            target.style.pointerEvents = 'none';
+        } else {
+            closeModal();
+            log(`🟥 <span style="color:#ff3333; font-weight:800;">[해독 실패]</span> 틀린 해독식입니다! 가스 정화 장치가 오작동하기 시작합니다.`);
+            triggerJumpscare("틀린 단서의 가치를 증명하라...!", 50); // 오답 시 50% 확률 Jumpscare
+        }
+    }
+
+    // 함정 가동
+    function interactDecoy(itemName, desc) {
+        log(`🔍 <span style="color:#ffaa00; font-weight:800;">[${itemName}]</span> ${desc}`);
+        const chance = Math.random() * 100;
+        if (chance < 35) { // 35% 확률로 악마 침공
+            setTimeout(() => {
+                triggerJumpscare("어둠 속에서 무언가가 튀어나왔습니다!", 100);
+            }, 500);
+        }
+    }
+
+    // 공포 연출 (갑툭튀 및 타임 어택 감점)
+    function triggerJumpscare(msg, forcePercent) {
+        const check = Math.random() * 100;
+        if (check <= forcePercent) {
+            const overlay = document.getElementById('jumpscare-overlay');
+            const container = document.getElementById('game-container');
+           
+            // 화면 흔들림 효과 부여
+            container.style.filter = 'blur(1px) contrast(150%)';
+            overlay.style.display = 'flex';
+           
+            log(`💀 <span style="color:#ff0000; font-weight:800;">[습격 경고]</span> 가스 악마의 침공으로 호흡기가 손상되었습니다! <b style="color:red;">시간 -8초</b> 패널티.`);
+            timeLeft = Math.max(1, timeLeft - 8); // 8초 단축
+
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                container.style.filter = 'none';
+            }, 1100);
+        }
+    }
+
+    // 도어락 오픈
+    function openDoorModal() {
+        document.getElementById('door-input').value = "";
+        document.getElementById('door-modal').style.display = 'block';
+        document.getElementById('door-input').focus();
+    }
+
+    // 최종 비밀번호 체크
+    function tryEscape() {
+        for (let i = 1; i <= 5; i++) {
+            if (passwords[i] === null) {
+                closeModal();
+                log(`⚠️ <span style="color:#ffaa00; font-weight:800;">[경고]</span> 문이 굳게 닫혀 잠금장치가 해제되지 않습니다. 아직 확보하지 못한 단서가 남았습니다.`);
+                return;
+            }
+        }
+
+        const input = document.getElementById('door-input').value.trim();
+        const correctCode = `${passwords[1]}${passwords[2]}${passwords[3]}${passwords[4]}${passwords[5]}`; // '41926'
+
+        if (input === correctCode) {
+            clearInterval(timerInterval);
+            gameOver(true);
+        } else {
+            closeModal();
+            log(`🟥 <span style="color:#ff3333; font-weight:800;">[에러]</span> 잘못된 패스코드입니다! 경보 데시벨이 급증하며 가스 주입 속도가 극대화됩니다.`);
+            timeLeft = Math.max(1, timeLeft - 15); // 탈출 실패 패널티 15초 차감
+            triggerJumpscare("파멸의 단추를 누른 대가다!", 100);
+        }
+    }
+
+    // 모달 소멸
+    function closeModal() {
+        document.getElementById('quiz-modal').style.display = 'none';
+        document.getElementById('door-modal').style.display = 'none';
+    }
+
+    // 엔딩 시나리오 가동
+    function gameOver(isWin) {
+        closeModal();
+        const container = document.getElementById('game-container');
+        container.style.animation = 'none';
+        container.style.background = '#0a0a0a';
+       
+        if (isWin) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:110px 50px 0 50px; box-sizing:border-box;">
+                    <h1 style="color:#00ff88; font-size:45px; text-shadow:0 0 15px rgba(0,255,136,0.5); margin-bottom:20px; font-weight:800;">🔓 SYSTEM CLEAR: 완벽한 탈출</h1>
+                    <p style="font-size:17px; line-height:1.9; color:#dfdfdf; font-weight: 300;">
+                        축하합니다! 방 내부를 순식간에 정화하며 강철 문이 육중한 소리를 내고 활짝 열렸습니다.<br>
+                        암독성 매연을 뿜던 위협체들의 연결 암호 [ <b style="color:#00ff88; font-size:20px;">41926</b> ]을 온전히 풀어내어 바깥의 신선하고 푸른 공기와 조우합니다.<br><br>
+                        <span style="color:#00ff88; font-weight:800; font-size:18px;">"당신의 폐에 맑은 미래를 선물하십시오. 금연이 바로 생명의 시작입니다."</span>
+                    </p>
+                    <button onclick="location.reload()" style="background:#00aa5a; color:white; border:none; padding:14px 35px; font-weight:bold; border-radius:6px; cursor:pointer; margin-top:25px; box-shadow: 0 4px 15px rgba(0,255,136,0.3);">다시 도전하기</button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="text-align:center; padding-top:150px; box-sizing:border-box;">
+                    <h1 style="color:#ff3333; font-size:45px; text-shadow:0 0 20px #ff0000; margin-bottom:20px; font-weight:800;">💀 GAME OVER (정화 실패)</h1>
+                    <p style="font-size:18px; color:#ddd; font-weight:300; line-height:1.6;">지독한 타르와 가스가 대기를 메워 산소 농도가 완전히 차단되었습니다...</p>
+                    <p style="font-size:14.5px; color:#777; margin-top:5px;">의식이 흐려집니다. 가속화되는 호흡기 손상을 극복하고 안전하게 다시 탈출을 도모하십시오.</p>
+                    <button onclick="location.reload()" style="background:#990000; color:white; border:none; padding:14px 35px; font-weight:bold; border-radius:6px; cursor:pointer; margin-top:25px; box-shadow: 0 4px 15px rgba(255,0,0,0.3);">재도전 하기</button>
+                </div>
+            `;
+        }
+    }
+
+    window.onload = startTimer;
+</script>
+</body>
+</html>
